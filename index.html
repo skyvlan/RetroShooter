@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js - pointerlock controls</title>
+    <title>RetroShooter</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -192,7 +192,7 @@
         "                                                                              ### # # ### ###                             \n" +
         "                                                                              #   # # #   #                               \n" +
         "                                                                              ### ### ### ###                             \n"
-    const wallTextures = ["/assets/patches/wall59_1.png", "/assets/patches/wall59_2.png", "/assets/patches/wall59_3.png", "/assets/patches/wall59_4.png"]
+    const wallTextures = ["./assets/patches/wall59_1.png", "./assets/patches/wall59_2.png", "./assets/patches/wall59_3.png", "./assets/patches/wall59_4.png"]
     const wallMats = wallTextures.map(function (path){
         const texture = new THREE.TextureLoader().load(path)
         const material = new THREE.MeshBasicMaterial({map: texture})
