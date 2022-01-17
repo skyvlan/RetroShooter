@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js - pointerlock controls</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <style>
+        #blocker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        #instructions {
+            width: 100%;
+            height: 100%;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #UIelements{
+            position: absolute;
+            z-index: 5;
+        }
+        #gunClass{
+            position: fixed;
+            z-index: 5;
+            width: 195px;
+            height: 240px;
+            top: 74%;
+            left: 45%;
+
+        }
+    </style>
+</head>
+<body>
+<div id="blocker">
+    <div id="instructions">
+        <p style="font-size:36px">
+            Click to play
+        </p>
+        <p>
+            Move: WASD<br/>
+            Jump: SPACE<br/>
+            Look: MOUSE
+        </p>
+    </div>
+</div>
+<div id="UIelements">
+    <img src="/assets/sprites/pisgc0.png" id="gunClass">
+</div>
+<script type="module">
+
+    import * as THREE from './three.js/build/three.module.js';
+
+    import { PointerLockControls } from './three.js/examples/jsm/controls/PointerLockControls.js';
+
+    let camera, scene, renderer, controls;
+    let cameraOrtho, sceneOrtho;
+
+    cameraOrtho = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 10 );
+    cameraOrtho.position.z = 10;
+
+    sceneOrtho = new THREE.Scene();
+    const SpriteTexture = new THREE.TextureLoader().load('/assets/sprites/pisgc0.png');
+    const SpriteMap = new THREE.SpriteMaterial({map: SpriteTexture});
+    const Sprite = new THREE.Sprite(SpriteMap);
+    Sprite.scale.set(0.5, 0.5, 0.5);
+    sceneOrtho.add(Sprite);
+
+    const objects = [];
+
+    let raycaster;
+    let raycasterX;
+    let raycasterZ;
+    let playerSpawnPos;
+    const examplemap =
+        "                                                                                 #####################                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #....E.....#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#....E...#                    \n" +
+        "                                                                                 #...##.....#........#                    \n" +
+        "                                                                                 #...##.....#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........#........#                    \n" +
+        "                                                                                 #..........####..####                    \n" +
+        "                                   ###########################                   #...................#                    \n" +
+        "                                   #...............#.........#                   #...................#                    \n" +
+        "                                   #...............#.........#                   #...................#                    \n" +
+        "                                   #...............#.........#                   #............E......#                    \n" +
+        "                                   #...............#.........#                   #...................#                    \n" +
+        "                                   #...E.......E...#.........#                   #...##..........##..#                    \n" +
+        "                                   #...............#.........#                   #...##..........##..#                    \n" +
+        "    ####################           #.........................#                   #...................#                    \n" +
+        "    #..................#           #.........................#                   #...................#                    \n" +
+        "    #..................#           #.......E.................#                   #...................#                    \n" +
+        "    #.......E.....E....#           #...............#...E.....#                   #...................#                    \n" +
+        "    #..................#           #...............#.........#                   #...................#                    \n" +
+        "    #...E..............#           #...............#.........#                   #...................#                    \n" +
+        "    #.............E....#           #....E.....E....#.........#                   #......E............#                    \n" +
+        "    #..................#           #...............#.........#                   #............########                    \n" +
+        "    #.........E........#           #...............#.........#                   #............#......#                    \n" +
+        "    #..................#           #...............#.........#                   #............#......#                    \n" +
+        "    #..................#           #################.........#                   #............#......#                    \n" +
+        "    ################..##           #..................########                   #............#......#                    \n" +
+        "                   #..#            #..................#......#                   #...##.......#..E...#                    \n" +
+        "                   #..#            #..................#......#                   #...##..............#                    \n" +
+        "                   #..#            #.....................E...#                   #...................#                    \n" +
+        "                   #..#            #.........................#                   #............#......#                    \n" +
+        "                   #..#            #......E...........#......#                   #............#......#                    \n" +
+        "                   #..##############..................#......#                   #............#......#                    \n" +
+        "                   #..................................########                   #............#......#                    \n" +
+        "                   #.........................................#                   #............#......#                    \n" +
+        "                   #################.........................##########################...################################\n" +
+        "                                   #.....................................................................................#\n" +
+        "                                   ###################...................................................................#\n" +
+        "                                   #.................#.......#####################################################.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #..E...#.......#\n" +
+        "                                   #...E.............#.......#                                            #......#.......#\n" +
+        "                                   #..........E......#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #...E..........#\n" +
+        "                                   #..........E......#.......#                                            #..............#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.........................#                                            #......#.......#\n" +
+        "                                   #.........................#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #..E...#....E..#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.....E...........#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            #......#.......#\n" +
+        "                                   #.................#.......#                                            ########.......#\n" +
+        "                                   #.................#.......#                                            #..............#\n" +
+        "                                   #.................#.......#                                            #..............#\n" +
+        "#################                  #.................#.......#                                            #..............#\n" +
+        "#...............#                  #.................#.......#                                            #..............#\n" +
+        "#...........E...#                  #.................#.......#                                            #...E..........#\n" +
+        "#...............#                  #.................#.......#                                            #..............#\n" +
+        "#.....E.........#                  #.................#.......#                                            #..............#\n" +
+        "#...............#                  ######################..###                                            #########..#####\n" +
+        "#...............#                  #.........................#                                            #..............#\n" +
+        "#...............####################.........................#                                            #..............#\n" +
+        "#..E......E......................................E...........#                                            #....E.......E.#\n" +
+        "#...............####################.........................#                                            #..............#\n" +
+        "#...............#                  #.........................#                                            #..............#\n" +
+        "#################                  ############..#############                                            ################\n" +
+        "                                              #..#                                                                        \n" +
+        "                                              #..#                                                                        \n" +
+        "                                              #..#                                                                        \n" +
+        "                                              #..#                                                                        \n" +
+        "                                              #..#                                                                        \n" +
+        "                                              #..#                                                                        \n" +
+        "                                        #######..#######                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                        #.......S......#                                                                  \n" +
+        "                                        #..............#                                                                  \n" +
+        "                                         #............#                                                                   \n" +
+        "                                          #..........#                                                                    \n" +
+        "                                           ##########                         ### # # # # # # #    #  #  #                \n" +
+        "                                                                              #   # #  #  # # #   # # ## #                \n" +
+        "                                                                              ### ##   #  # # #   # # # ##                \n" +
+        "                                                                                # # #  #  # # #   ### #  #                \n" +
+        "                                                                              ### # #  #   #  ### # # #  #                \n" +
+        "                                                                                                                          \n" +
+        "                                                                              ### ### ### ###                             \n" +
+        "                                                                                # # #   #   #                             \n" +
+        "                                                                              ### # # ### ###                             \n" +
+        "                                                                              #   # # #   #                               \n" +
+        "                                                                              ### ### ### ###                             \n"
+    const wallTextures = ["/assets/patches/wall59_1.png", "/assets/patches/wall59_2.png", "/assets/patches/wall59_3.png", "/assets/patches/wall59_4.png"]
+    const wallMats = wallTextures.map(function (path){
+        const texture = new THREE.TextureLoader().load(path)
+        const material = new THREE.MeshBasicMaterial({map: texture})
+        return material
+    })
+
+    const generateLevel = (level) => {
+        let levelArray = level.split("\n");
+        let levelWidth = levelArray[0].length;
+        let levelHeight = levelArray.length;
+        // let levelGeometry = new THREE.PlaneGeometry(levelWidth * 10, levelHeight * 10, levelWidth - 1, levelHeight - 1);
+        // let levelMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true});
+        // let levelMesh = new THREE.Mesh(levelGeometry, levelMaterial);
+        // scene.add(levelMesh);
+        for (let y = 0; y < levelHeight; y++) {
+            for (let x = 0; x < levelWidth; x++) {
+                if (levelArray[y][x] === "#") {
+                    let cubeGeometry = new THREE.BoxGeometry(10, 50, 10);
+                    let cubeMaterial = new THREE.MeshBasicMaterial({color: 0x000000});
+                    let cubeMesh = new THREE.Mesh(cubeGeometry, wallMats[Math.floor(Math.random() * wallMats.length)]);
+                    cubeMesh.position.set(x * 10, 0, y * 10);
+                    let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
+                    let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+                    ceilingMesh.position.set(x * 10, 25, y * 10);
+                    cubeMesh.updateMatrixWorld()
+                    scene.add(ceilingMesh);
+                    scene.add(cubeMesh);
+                    objects.push(cubeMesh);
+
+                }
+                if(levelArray[y][x] === "."){
+                    let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
+                    let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+                    floorMesh.position.set(x * 10, -25, y * 10);
+                    let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
+                    let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+                    ceilingMesh.position.set(x * 10, 25, y * 10);
+                    scene.add(ceilingMesh);
+                    scene.add(floorMesh);
+                    objects.push(floorMesh);
+                }
+                if(levelArray[y][x] === "S"){
+                    let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
+                    let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+                    floorMesh.position.set(x * 10, -25, y * 10);
+                    let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
+                    let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+                    ceilingMesh.position.set(x * 10, 25, y * 10);
+                    scene.add(ceilingMesh);
+                    playerSpawnPos = new THREE.Vector3(x * 10, 0, y * 10);
+                    scene.add(floorMesh);
+                }
+                if(levelArray[y][x] === "E"){
+                    let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
+                    let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+                    let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
+                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
+                    let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+                    let enemy = createEnemy();
+                    enemy.position.set(x * 10, 0, y * 10);
+                    ceilingMesh.position.set(x * 10, 25, y * 10);
+                    scene.add(ceilingMesh);
+                    floorMesh.position.set(x * 10, -25, y * 10);
+                    scene.add(floorMesh);
+                }
+            }
+        }
+
+
+    }
+    const createEnemy = () =>{
+        const map = new THREE.TextureLoader().load('/assets/sprites/heada1.png');
+        const mat = new THREE.SpriteMaterial({map: map});
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(10, 10, 10);
+        scene.add(sprite);
+        return sprite
+    }
+
+
+    let moveForward = false;
+    let moveBackward = false;
+    let moveLeft = false;
+    let moveRight = false;
+    let canJump = false;
+
+    let prevTime = performance.now();
+    const velocity = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    const vertex = new THREE.Vector3();
+    const color = new THREE.Color();
+    let gun;
+    init();
+    animate();
+
+    function init() {
+
+        camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+        camera.position.y = 0;
+
+
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xffffff );
+        scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+
+        const light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
+        light.position.set( 0.5, 1, 0.75 );
+        scene.add( light );
+
+        controls = new PointerLockControls( camera, document.body );
+
+        const blocker = document.getElementById( 'blocker' );
+        const instructions = document.getElementById( 'instructions' );
+
+        instructions.addEventListener( 'click', function () {
+
+            controls.lock();
+
+        } );
+
+        controls.addEventListener( 'lock', function () {
+
+            instructions.style.display = 'none';
+            blocker.style.display = 'none';
+
+        } );
+
+        controls.addEventListener( 'unlock', function () {
+
+            blocker.style.display = 'block';
+            instructions.style.display = '';
+
+        } );
+
+        scene.add( controls.getObject() );
+
+        const onKeyDown = function ( event ) {
+
+            switch ( event.code ) {
+
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = true;
+                    break;
+
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = true;
+                    break;
+
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = true;
+                    break;
+
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = true;
+                    break;
+
+                case 'Space':
+                    if ( canJump === true ) velocity.y += 350;
+                    canJump = false;
+                    break;
+
+            }
+
+        };
+
+        const onKeyUp = function ( event ) {
+
+            switch ( event.code ) {
+
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = false;
+                    break;
+
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = false;
+                    break;
+
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = false;
+                    break;
+
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = false;
+                    break;
+
+            }
+
+        };
+
+        document.addEventListener( 'keydown', onKeyDown );
+        document.addEventListener( 'keyup', onKeyUp );
+
+        raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+        raycasterX = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 1, 0, 0 ), 0, 10 );
+        raycasterZ = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, 1 ), 0, 10 );
+        // floor
+
+        let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
+        floorGeometry.rotateX( - Math.PI / 2 );
+
+        // vertex displacement
+
+        let position = floorGeometry.attributes.position;
+
+        // for ( let i = 0, l = position.count; i < l; i ++ ) {
+        //
+        //     vertex.fromBufferAttribute( position, i );
+        //
+        //     vertex.x += Math.random() * 20 - 10;
+        //     vertex.y += Math.random() * 2;
+        //     vertex.z += Math.random() * 20 - 10;
+        //
+        //     position.setXYZ( i, vertex.x, vertex.y, vertex.z );
+        //
+        // }
+
+       // floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
+
+        position = floorGeometry.attributes.position;
+        const colorsFloor = [];
+
+        for ( let i = 0, l = position.count; i < l; i ++ ) {
+            //color.setHex to random colors in range from 0 to 255
+
+
+        }
+
+        floorGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsFloor, 3 ) );
+
+        const floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: true } );
+
+        const floor = new THREE.Mesh( floorGeometry, floorMaterial );
+        scene.add( floor );
+
+        // objects
+
+        const boxGeometry = new THREE.BoxGeometry( 20, 20, 20 ).toNonIndexed();
+
+        position = boxGeometry.attributes.position;
+        const colorsBox = [];
+
+
+        // for ( let i = 0, l = position.count; i < l; i ++ ) {
+        //
+        //     color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+        //     colorsBox.push( color.r, color.g, color.b );
+        //
+        // }
+        generateLevel(examplemap);
+
+        const drawGun = () =>{
+            const map = new THREE.TextureLoader().load('/assets/sprites/pisgc0.png');
+            const mat = new THREE.SpriteMaterial({map: map,useScreenCoordinates:false});
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(10, 10, 10);
+            sprite.position.set(15, 15, 15);
+
+            scene.add(sprite);
+            return sprite
+        }
+
+
+
+        gun = drawGun();
+
+
+
+        boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
+
+        // for ( let i = 0; i < 500; i ++ ) {
+        //
+        //     const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
+        //     boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+        //
+        //     const box = new THREE.Mesh( boxGeometry, boxMaterial );
+        //     box.position.x = Math.floor( Math.random() * 20 - 10 ) * 20;
+        //     box.position.y = Math.floor( Math.random() * 20 ) * 20 + 10;
+        //     box.position.z = Math.floor( Math.random() * 20 - 10 ) * 20;
+        //
+        //     scene.add( box );
+        //     objects.push( box );
+        //
+        // }
+
+        //
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        //
+
+        window.addEventListener( 'resize', onWindowResize );
+
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+
+    controls.getObject().position.set(playerSpawnPos.x, playerSpawnPos.y +25, playerSpawnPos.z);
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        const time = performance.now();
+
+        if ( controls.isLocked === true ) {
+
+
+
+            raycaster.ray.origin.copy( controls.getObject().position );
+            raycaster.ray.origin.y -= 10;
+            raycasterX.ray.origin.copy( controls.getObject().position );
+            raycasterX.ray.origin.x -= 10;
+            raycasterZ.ray.origin.copy( controls.getObject().position );
+            raycasterZ.ray.origin.z -= 10;
+
+            const intersections = raycaster.intersectObjects( objects, false );
+            const intersectionsX = raycasterX.intersectObjects( objects, false );
+            const intersectionsZ = raycasterZ.intersectObjects( objects, false );
+
+            const onObject = intersections.length > 0;
+            const onObjectX = intersectionsX.length > 0;
+            const onObjectZ = intersectionsZ.length > 0;
+            const delta = ( time - prevTime ) / 1000;
+
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+
+            velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+            direction.z = Number( moveForward ) - Number( moveBackward );
+            direction.x = Number( moveRight ) - Number( moveLeft );
+            direction.normalize(); // this ensures consistent movements in all directions
+
+            if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+            if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+
+            if ( onObject === true ) {
+
+                velocity.y = Math.max( 0, velocity.y );
+                canJump = true;
+
+            }
+
+            if(onObjectX === true){
+                console.log("touching X");
+                velocity.x = Math.max( 0, velocity.x );
+            }
+            if(onObjectZ === true){
+                velocity.z = Math.max( 0, velocity.z );
+            }
+
+            controls.moveRight( - velocity.x * delta );
+            controls.moveForward( - velocity.z * delta );
+
+            controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+            if ( controls.getObject().position.y < 0 ) {
+
+                velocity.y = 0;
+                controls.getObject().position.y = 0;
+
+                canJump = false;
+
+            }
+
+        }
+
+        prevTime = time;
+        renderer.render( scene, camera );
+
+
+    }
+
+</script>
+</body>
+</html>
