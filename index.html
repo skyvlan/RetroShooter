@@ -86,7 +86,7 @@
     let raycasterXP;
     let raycasterZ;
     let raycasterZP;
-    let gunRaycaster;
+
     let playerSpawnPos;
     const examplemap =
         "                                                                                 #####################                    \n" +
@@ -417,7 +417,7 @@
         raycasterXP = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( -1, 0, 0 ), 0, 10 );
         raycasterZ = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, 1 ), 0, 10 );
         raycasterZP = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, -1 ), 0, 10 );
-        gunRaycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, 1 ), 0, 1000);
+
         // floor
 
         let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
@@ -528,7 +528,7 @@
             const onObjectXP = intersectionsXP.length > 0;
             const onObjectZ = intersectionsZ.length > 0;
             const onObjectZP = intersectionsZP.length > 0;
-            const onObjectGun = intersectionsGun.length > 0;
+
 
             const delta = ( time - prevTime ) / 1000;
 
