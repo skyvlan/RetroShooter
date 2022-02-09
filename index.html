@@ -220,7 +220,7 @@
                     let cubeMesh = new THREE.Mesh(cubeGeometry, wallMats[Math.floor(Math.random() * wallMats.length)]);
                     cubeMesh.position.set(x * 10, 0, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("./gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -232,12 +232,12 @@
                 }
                 if(levelArray[y][x] === "."){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("./gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     floorMesh.position.set(x * 10, -25, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("./gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -247,12 +247,12 @@
                 }
                 if(levelArray[y][x] === "S"){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("./gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     floorMesh.position.set(x * 10, -25, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("./gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -262,11 +262,11 @@
                 }
                 if(levelArray[y][x] === "E"){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("./gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("./gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     let enemy = createEnemy();
@@ -283,7 +283,7 @@
 
     }
     const createEnemy = () =>{
-        const map = new THREE.TextureLoader().load('/gameassets/heada1.png');
+        const map = new THREE.TextureLoader().load('./gameassets/heada1.png');
         const mat = new THREE.SpriteMaterial({map: map});
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(10, 10, 10);
