@@ -56,6 +56,7 @@
     </div>
 </div>
 <div id="UIelements">
+    <div id = "score">0</div>
     <img src="pisgc0.png" id="gunClass">
 </div>
 <script type="module">
@@ -78,10 +79,14 @@
     sceneOrtho.add(Sprite);
 
     const objects = [];
+    const enemies = [];
 
     let raycaster;
     let raycasterX;
+    let raycasterXP;
     let raycasterZ;
+    let raycasterZP;
+    let gunRaycaster;
     let playerSpawnPos;
     const examplemap =
         "                                                                                 #####################                    \n" +
@@ -192,7 +197,7 @@
         "                                                                              ### # # ### ###                             \n" +
         "                                                                              #   # # #   #                               \n" +
         "                                                                              ### ### ### ###                             \n"
-    const wallTextures = ["./assets/patches/wall59_1.png", "./assets/patches/wall59_2.png", "./assets/patches/wall59_3.png", "./assets/patches/wall59_4.png"]
+    const wallTextures = ["./gameassets/wall59_1.png", "./gameassets/wall59_2.png", "./gameassets/wall59_3.png", "./gameassets/wall59_4.png"]
     const wallMats = wallTextures.map(function (path){
         const texture = new THREE.TextureLoader().load(path)
         const material = new THREE.MeshBasicMaterial({map: texture})
@@ -215,7 +220,7 @@
                     let cubeMesh = new THREE.Mesh(cubeGeometry, wallMats[Math.floor(Math.random() * wallMats.length)]);
                     cubeMesh.position.set(x * 10, 0, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -227,12 +232,12 @@
                 }
                 if(levelArray[y][x] === "."){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     floorMesh.position.set(x * 10, -25, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -242,12 +247,12 @@
                 }
                 if(levelArray[y][x] === "S"){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     floorMesh.position.set(x * 10, -25, y * 10);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
@@ -257,15 +262,16 @@
                 }
                 if(levelArray[y][x] === "E"){
                     let floorGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let floorTexture = new THREE.TextureLoader().load("/assets/flats/rrock04.png");
+                    let floorTexture = new THREE.TextureLoader().load("/gameassets/rrock04.png");
                     let floorMaterial = new THREE.MeshBasicMaterial({map: floorTexture});
                     let floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
                     let ceilingGeometry = new THREE.BoxGeometry(10, 0, 10);
-                    let ceilingTexture = new THREE.TextureLoader().load("/assets/flats/ceil1_1.png");
+                    let ceilingTexture = new THREE.TextureLoader().load("/gameassets/ceil1_1.png");
                     let ceilingMaterial = new THREE.MeshBasicMaterial({map: ceilingTexture});
                     let ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
                     let enemy = createEnemy();
                     enemy.position.set(x * 10, 0, y * 10);
+                    enemies.push(enemy);
                     ceilingMesh.position.set(x * 10, 25, y * 10);
                     scene.add(ceilingMesh);
                     floorMesh.position.set(x * 10, -25, y * 10);
@@ -277,7 +283,7 @@
 
     }
     const createEnemy = () =>{
-        const map = new THREE.TextureLoader().load('/assets/sprites/heada1.png');
+        const map = new THREE.TextureLoader().load('/gameassets/heada1.png');
         const mat = new THREE.SpriteMaterial({map: map});
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(10, 10, 10);
@@ -291,7 +297,7 @@
     let moveLeft = false;
     let moveRight = false;
     let canJump = false;
-
+    let isShooting = false;
     let prevTime = performance.now();
     const velocity = new THREE.Vector3();
     const direction = new THREE.Vector3();
@@ -403,13 +409,15 @@
             }
 
         };
-
         document.addEventListener( 'keydown', onKeyDown );
         document.addEventListener( 'keyup', onKeyUp );
 
-        raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+        raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, -1, 0 ), 0, 10 );
         raycasterX = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 1, 0, 0 ), 0, 10 );
+        raycasterXP = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( -1, 0, 0 ), 0, 10 );
         raycasterZ = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, 1 ), 0, 10 );
+        raycasterZP = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, -1 ), 0, 10 );
+        gunRaycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, 0, 1 ), 0, 1000);
         // floor
 
         let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
@@ -419,28 +427,11 @@
 
         let position = floorGeometry.attributes.position;
 
-        // for ( let i = 0, l = position.count; i < l; i ++ ) {
-        //
-        //     vertex.fromBufferAttribute( position, i );
-        //
-        //     vertex.x += Math.random() * 20 - 10;
-        //     vertex.y += Math.random() * 2;
-        //     vertex.z += Math.random() * 20 - 10;
-        //
-        //     position.setXYZ( i, vertex.x, vertex.y, vertex.z );
-        //
-        // }
-
-       // floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
 
         position = floorGeometry.attributes.position;
         const colorsFloor = [];
 
-        for ( let i = 0, l = position.count; i < l; i ++ ) {
-            //color.setHex to random colors in range from 0 to 255
 
-
-        }
 
         floorGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsFloor, 3 ) );
 
@@ -457,16 +448,10 @@
         const colorsBox = [];
 
 
-        // for ( let i = 0, l = position.count; i < l; i ++ ) {
-        //
-        //     color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-        //     colorsBox.push( color.r, color.g, color.b );
-        //
-        // }
         generateLevel(examplemap);
 
         const drawGun = () =>{
-            const map = new THREE.TextureLoader().load('/assets/sprites/pisgc0.png');
+            const map = new THREE.TextureLoader().load('/gameassets/sprites/pisgc0.png');
             const mat = new THREE.SpriteMaterial({map: map,useScreenCoordinates:false});
             const sprite = new THREE.Sprite(mat);
             sprite.scale.set(10, 10, 10);
@@ -484,22 +469,6 @@
 
         boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
 
-        // for ( let i = 0; i < 500; i ++ ) {
-        //
-        //     const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
-        //     boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-        //
-        //     const box = new THREE.Mesh( boxGeometry, boxMaterial );
-        //     box.position.x = Math.floor( Math.random() * 20 - 10 ) * 20;
-        //     box.position.y = Math.floor( Math.random() * 20 ) * 20 + 10;
-        //     box.position.z = Math.floor( Math.random() * 20 - 10 ) * 20;
-        //
-        //     scene.add( box );
-        //     objects.push( box );
-        //
-        // }
-
-        //
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -522,17 +491,18 @@
     }
 
 
-    controls.getObject().position.set(playerSpawnPos.x, playerSpawnPos.y +25, playerSpawnPos.z);
+    controls.getObject().position.set(playerSpawnPos.x, playerSpawnPos.y , playerSpawnPos.z);
 
     function animate() {
 
         requestAnimationFrame( animate );
 
         const time = performance.now();
+        var score = 0;
 
         if ( controls.isLocked === true ) {
-
-
+            score = Math.floor( time / 1000 );
+            document.getElementById('score').innerHTML = score;
 
             raycaster.ray.origin.copy( controls.getObject().position );
             raycaster.ray.origin.y -= 10;
@@ -540,24 +510,39 @@
             raycasterX.ray.origin.x -= 10;
             raycasterZ.ray.origin.copy( controls.getObject().position );
             raycasterZ.ray.origin.z -= 10;
+            raycasterXP.ray.origin.copy( controls.getObject().position );
+            raycasterXP.ray.origin.x += 10;
+            raycasterZP.ray.origin.copy( controls.getObject().position );
+            raycasterZP.ray.origin.z += 10;
+
 
             const intersections = raycaster.intersectObjects( objects, false );
             const intersectionsX = raycasterX.intersectObjects( objects, false );
+            const intersectionsXP = raycasterXP.intersectObjects( objects, false );
             const intersectionsZ = raycasterZ.intersectObjects( objects, false );
+            const intersectionsZP = raycasterZP.intersectObjects( objects, false );
+
 
             const onObject = intersections.length > 0;
             const onObjectX = intersectionsX.length > 0;
+            const onObjectXP = intersectionsXP.length > 0;
             const onObjectZ = intersectionsZ.length > 0;
+            const onObjectZP = intersectionsZP.length > 0;
+            const onObjectGun = intersectionsGun.length > 0;
+
             const delta = ( time - prevTime ) / 1000;
+
+
+
+
 
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.z -= velocity.z * 10.0 * delta;
 
-            velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
-
+            velocity.y -= 9.8 * 100.0 * delta;
             direction.z = Number( moveForward ) - Number( moveBackward );
             direction.x = Number( moveRight ) - Number( moveLeft );
-            direction.normalize(); // this ensures consistent movements in all directions
+            direction.normalize();
 
             if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
             if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
@@ -570,17 +555,21 @@
             }
 
             if(onObjectX === true){
-                console.log("touching X");
                 velocity.x = Math.max( 0, velocity.x );
             }
             if(onObjectZ === true){
                 velocity.z = Math.max( 0, velocity.z );
             }
-
+            if(onObjectXP === true){
+                velocity.x = Math.min( 0, velocity.x );
+            }
+            if(onObjectZP === true){
+                velocity.z = Math.min( 0, velocity.z );
+            }
             controls.moveRight( - velocity.x * delta );
             controls.moveForward( - velocity.z * delta );
 
-            controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+            controls.getObject().position.y += ( velocity.y * delta );
 
             if ( controls.getObject().position.y < 0 ) {
 
